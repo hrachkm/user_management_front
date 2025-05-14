@@ -79,11 +79,6 @@ export const AddUser = ({open, setOpen, setUsers, userToEdit, setUserToEdit}) =>
             setSubmissionStatus('error');
             setSubmissionMsg('Hubo un error al crear el usuario: ' + response.msg);
         }
-        // Opcional: Cerrar el modal automáticamente después de un tiempo
-        //setTimeout(handleClose, 1500);
-        // Simulación de error (para probar el mensaje de error, comenta lo anterior y descomenta esto)
-        // setSubmissionStatus('error');
-        // setSubmitting(false);
     }
 
 
