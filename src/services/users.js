@@ -21,4 +21,24 @@ export class Users extends Requests {
         return response;
     }
 
+    async updateUser(userId, payload){
+
+        const requestUrl = `${this.url}/${userId}`;
+        const response = await super.postPutSendRequest(
+            payload,
+            'PUT',
+            requestUrl
+        );
+        return response;
+    }
+
+    async removeUser(userId){
+        const requestUrl = `${this.url}/${userId}`;
+        const response = await super.getDeleteSendRequest(
+            'DELETE',
+            requestUrl
+        );
+        return response;
+    }
+
 }

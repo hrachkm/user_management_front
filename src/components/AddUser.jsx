@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import {
     Box,
@@ -24,27 +24,57 @@ const style = {
   p: 4,
 };
 
-export const AddUser = ({open, setOpen, setUsers}) => {
+export const AddUser = ({open, setOpen, setUsers, userToEdit, setUserToEdit}) => {
     const usersService = new Users();
+
+     useEffect(() => {
+        setSubmissionStatus(null); // Limpiar el estado al abrir para crear o editar
+    }, [open, userToEdit]);
     const handleClose = () => {
         setOpen(false);
         setSubmissionStatus(null);
+        setUserToEdit(null);
     } 
 
     const [submissionStatus, setSubmissionStatus] = useState(null);
     const [submissionMsg, setSubmissionMsg] = useState('');
 
     const handleSubmit = async (values, { setSubmitting, resetForm }) => {
-        const response = await usersService.addUser(values);
+        let response;
+        if (userToEdit?.id) {
+            // Editar usuario existente
+            response = await usersService.updateUser(userToEdit.id, values);
+        } else {
+            // Crear nuevo usuario
+            response = await usersService.addUser(values);
+        }
         setSubmitting(false);
         if(response.created_at){
             setSubmissionStatus('success');
-            setSubmissionMsg('Usuario creado con éxito!');
-            setUsers(currentUsers => [...currentUsers, response]);
-            let usersLocal = JSON.parse(localStorage.getItem('users'));
-            usersLocal.push(response);
-            localStorage.setItem('users', JSON.stringify(usersLocal));
-            resetForm();
+            setSubmissionMsg(`Usuario ${userToEdit?.id ? 'actualizado' : 'creado'} con éxito!`);
+
+            if (userToEdit?.id) {
+                // Actualizar en la lista local
+                setUsers(currentUsers =>
+                    currentUsers.map(user =>
+                        user.id === response.id ? response : user
+                    )
+                );
+
+                //Actualizar en local storage
+                const localItems = JSON.parse(localStorage.getItem('users')) || [];
+                const updatedLocalItems = localItems.map(item =>
+                    item.id === response.id ? response : item
+                );
+                localStorage.setItem('users', JSON.stringify(updatedLocalItems));
+            } else {
+                setUsers(currentUsers => [...currentUsers, response]);
+                let usersLocal = JSON.parse(localStorage.getItem('users'));
+                usersLocal.push(response);
+                localStorage.setItem('users', JSON.stringify(usersLocal));
+                resetForm();
+            }
+
         } else {
             setSubmissionStatus('error');
             setSubmissionMsg('Hubo un error al crear el usuario: ' + response.msg);
@@ -74,6 +104,10 @@ export const AddUser = ({open, setOpen, setUsers}) => {
         return errors;
     };
 
+    const initialValues = userToEdit ? { nombre: userToEdit.nombre, email: userToEdit.email } : { nombre: '', email: '' };
+    const modalTitle = userToEdit ? 'Editar Usuario' : 'Crear Nuevo Usuario';
+    const submitButtonText = userToEdit ? 'Guardar Cambios' : 'Crear Usuario';
+
     return(
         <>
             <Modal
@@ -82,10 +116,10 @@ export const AddUser = ({open, setOpen, setUsers}) => {
             >
                 <Box sx={style}>
                     <Typography id="form-modal-title" variant="h6" component="h2" mb={2}>
-                        Crear Nuevo Usuario
+                        { modalTitle }
                     </Typography>
                     <Formik
-                        initialValues={{ nombre: '', email: '' }}
+                        initialValues={initialValues}
                         onSubmit={handleSubmit}
                         validate={validate}
                     >
@@ -100,9 +134,9 @@ export const AddUser = ({open, setOpen, setUsers}) => {
                                         name="nombre" 
                                         label="Nombre" 
                                         variant="outlined"
-                                        error={touched.name && !!errors.name}
+                                        error={touched.nombre && !!errors.nombre}
                                     />
-                                    <ErrorMessage name="name" component="div" style={{ color: 'red', fontSize: '0.8em' }} />
+                                    <ErrorMessage name="nombre" component="div" style={{ color: '#F44336', fontSize: '0.8em', paddingTop: '0.5rem' }} />
                                 </div>
                                 <div>
                                     <Field 
@@ -114,10 +148,10 @@ export const AddUser = ({open, setOpen, setUsers}) => {
                                         variant="outlined"
                                         error={touched.email && !!errors.email}
                                     />
-                                    <ErrorMessage name="email" component="div" style={{ color: 'red', fontSize: '0.8em' }} />
+                                    <ErrorMessage name="email" component="div" style={{ color: '#F44336', fontSize: '0.8em', paddingTop: '0.5rem' }} />
                                 </div>
                                 <Button type="submit" variant="contained" disabled={isSubmitting}>
-                                    {isSubmitting ? 'Enviando...' : 'Crear Usuario'}
+                                    {isSubmitting ? 'Enviando...' : submitButtonText}
                                 </Button>
                                 <Button onClick={handleClose}>Cancelar</Button>
                                 {submissionStatus === 'success' && (
