@@ -32,6 +32,16 @@ export class Users extends Requests {
         return response;
     }
 
+    async updateUserActivation(userId, payload){
+        const requestUrl = `${this.url}/activation/${userId}`;
+        const response = await super.postPutSendRequest(
+            payload,
+            'PUT',
+            requestUrl
+        );
+        return response;
+    }
+
     async removeUser(userId){
         const requestUrl = `${this.url}/${userId}`;
         const response = await super.getDeleteSendRequest(
